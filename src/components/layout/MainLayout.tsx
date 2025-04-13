@@ -8,6 +8,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Calendar, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -30,7 +31,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         </Button>
       </DrawerTrigger>
       <DrawerContent className="h-[80vh]">
-        <Schedule />
+        <ScrollArea className="h-full max-h-[75vh]">
+          <Schedule />
+        </ScrollArea>
       </DrawerContent>
     </Drawer>
   ) : (
@@ -50,7 +53,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         side="left"
         className={`w-64 p-0 ${isOpen ? 'block' : 'hidden'}`}
       >
-        <Schedule />
+        <ScrollArea className="h-full max-h-[calc(100vh-2rem)]">
+          <Schedule />
+        </ScrollArea>
       </SheetContent>
     </Sheet>
   );
