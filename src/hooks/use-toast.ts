@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -168,6 +169,7 @@ function toast({ ...props }: Toast) {
   }
 }
 
+// This is a React hook, ensure it's only called within a React component
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
