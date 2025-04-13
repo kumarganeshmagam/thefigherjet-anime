@@ -1,162 +1,183 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ChevronRight } from 'lucide-react';
-import { 
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger 
-} from "@/components/ui/collapsible";
-import { 
+import { useAnimeSchedule } from '@/lib/jikanApi';
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
+  AccordionTrigger,
 } from "@/components/ui/accordion";
-import { animeList } from '@/lib/dummyData';
-import { Badge } from '@/components/ui/badge';
-
-// Helper function to get today's day name
-const getDayName = (dayOffset = 0) => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const today = new Date();
-  today.setDate(today.getDate() + dayOffset);
-  return days[today.getDay()];
-};
-
-// Group anime by day for the schedule
-const getScheduleByDay = () => {
-  // In a real app, this would come from an API
-  // For now, we'll use the dummy data and assign days randomly
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const schedule = days.reduce((acc, day) => {
-    acc[day] = [];
-    return acc;
-  }, {} as Record<string, typeof animeList>);
-  
-  // Assign animes to days (for demo purposes only)
-  animeList.forEach((anime) => {
-    // Randomly assign a day (in real app, this would be from actual schedule data)
-    const randomDay = days[Math.floor(Math.random() * days.length)];
-    schedule[randomDay].push(anime);
-  });
-  
-  return schedule;
-};
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Calendar, Clock } from 'lucide-react';
 
 const Schedule = () => {
-  const schedule = getScheduleByDay();
-  const today = getDayName();
-  const tomorrow = getDayName(1);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const { data: schedule, isLoading, error } = useAnimeSchedule();
+  const [activeDay, setActiveDay] = useState(getCurrentDay());
   
-  const toggleDayExpansion = (day: string) => {
-    setExpandedDay(expandedDay === day ? null : day);
-  };
+  // Helper to get current day
+  function getCurrentDay(): string {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[new Date().getDay()];
+  }
+  
+  // Helper to format day
+  function formatDay(day: string): string {
+    return day.charAt(0).toUpperCase() + day.slice(1);
+  }
+  
+  // Get tomorrow
+  function getTomorrow(): string {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const today = new Date().getDay();
+    return days[(today + 1) % 7];
+  }
+  
+  if (isLoading) {
+    return (
+      <div className="p-4 bg-gray-900 rounded-lg">
+        <h2 className="font-bold text-lg mb-4 flex items-center">
+          <Calendar className="h-4 w-4 mr-2" /> Anime Schedule
+        </h2>
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <Skeleton className="h-12 w-12 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-4 bg-gray-900 rounded-lg">
+        <h2 className="font-bold text-lg mb-4 flex items-center">
+          <Calendar className="h-4 w-4 mr-2" /> Anime Schedule
+        </h2>
+        <p className="text-red-500">Failed to load schedule</p>
+      </div>
+    );
+  }
   
   return (
-    <div className="h-full">
-      <div className="p-4 pb-20">
-        <h2 className="text-lg font-medium flex items-center mb-4">
-          <Calendar className="mr-2 h-5 w-5" />
-          Anime Schedule
-        </h2>
-        
-        {/* Today's Schedule */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold flex items-center mb-3 text-anime-primary">
-            Today - {today}
-            <Badge className="ml-2 bg-anime-primary text-xs" variant="secondary">
-              NEW
-            </Badge>
-          </h3>
-          <ul className="space-y-3">
-            {schedule[today].slice(0, 5).map((anime) => (
-              <li key={anime.id} className="text-sm hover:text-anime-primary transition-colors group">
-                <Link to={`/anime/${anime.id}`} className="flex items-center">
-                  <div className="w-12 h-16 overflow-hidden rounded mr-3 relative group-hover:ring-1 group-hover:ring-anime-primary transition-all">
-                    <img 
-                      src={anime.coverImage} 
-                      alt={anime.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <span className="line-clamp-1 font-medium">{anime.title}</span>
-                    <span className="text-xs text-gray-400 line-clamp-1 mt-1">Episode {Math.floor(Math.random() * 12) + 1}</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        {/* Tomorrow's Schedule */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold mb-3">Tomorrow - {tomorrow}</h3>
-          <ul className="space-y-3">
-            {schedule[tomorrow].slice(0, 3).map((anime) => (
-              <li key={anime.id} className="text-sm hover:text-anime-primary transition-colors group">
-                <Link to={`/anime/${anime.id}`} className="flex items-center">
-                  <div className="w-12 h-16 overflow-hidden rounded mr-3 relative group-hover:ring-1 group-hover:ring-anime-primary transition-all">
-                    <img 
-                      src={anime.coverImage} 
-                      alt={anime.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <span className="line-clamp-1 font-medium">{anime.title}</span>
-                    <span className="text-xs text-gray-400 line-clamp-1 mt-1">Episode {Math.floor(Math.random() * 12) + 1}</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        {/* Full Weekly Schedule (Accordion) */}
-        <Accordion type="single" collapsible className="mt-6">
-          <AccordionItem value="weekly-schedule" className="border-b-0">
-            <AccordionTrigger className="text-sm font-medium py-3 px-2 bg-gray-800/50 rounded-lg hover:bg-gray-800">
-              Weekly Schedule
-            </AccordionTrigger>
-            <AccordionContent className="pt-3">
-              {Object.entries(schedule).map(([day, animes]) => (
-                <Collapsible 
-                  key={day} 
-                  className="mb-2" 
-                  open={expandedDay === day}
-                  onOpenChange={() => toggleDayExpansion(day)}
-                >
-                  <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium py-2 px-2 rounded hover:bg-gray-800/50 transition-colors">
-                    <span className={day === today ? 'text-anime-primary' : ''}>{day}</span>
-                    <ChevronRight className={`h-4 w-4 transition-transform ${expandedDay === day ? 'rotate-90' : ''}`} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <ul className="py-2 space-y-2 ml-2">
-                      {animes.map((anime) => (
-                        <li key={anime.id} className="text-xs hover:text-anime-primary transition-colors">
-                          <Link to={`/anime/${anime.id}`} className="flex items-center py-1">
-                            <div className="w-6 h-8 overflow-hidden rounded mr-2">
-                              <img 
-                                src={anime.coverImage} 
-                                alt={anime.title} 
-                                className="w-full h-full object-cover" 
-                              />
-                            </div>
-                            <span className="line-clamp-1">{anime.title}</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+    <div className="p-4 bg-gray-900 rounded-lg">
+      <h2 className="font-bold text-lg mb-4 flex items-center">
+        <Calendar className="h-4 w-4 mr-2" /> Anime Schedule
+      </h2>
+      
+      <div className="flex overflow-x-auto mb-4 gap-1 pb-2">
+        {Object.keys(schedule || {}).map((day) => (
+          <button
+            key={day}
+            onClick={() => setActiveDay(day)}
+            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
+              activeDay === day
+                ? 'bg-anime-primary text-white'
+                : 'bg-gray-800 hover:bg-gray-700'
+            }`}
+          >
+            {formatDay(day)}
+          </button>
+        ))}
       </div>
+      
+      <ScrollArea className="h-full max-h-[calc(100vh-200px)]">
+        <div className="space-y-4">
+          {/* Today's schedule */}
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">
+              {activeDay === getCurrentDay() ? "Today" : formatDay(activeDay)}
+            </h3>
+            <div className="space-y-2">
+              {schedule && schedule[activeDay]?.slice(0, 10).map((anime) => (
+                <Link
+                  key={anime.id}
+                  to={`/anime/${anime.id}`}
+                  className="flex gap-2 p-2 rounded-md hover:bg-gray-800 transition-colors"
+                >
+                  <img
+                    src={anime.coverImage}
+                    alt={anime.title}
+                    className="h-12 w-12 object-cover rounded-md"
+                  />
+                  <div>
+                    <h4 className="text-sm font-medium line-clamp-1">{anime.title}</h4>
+                    <p className="text-xs text-gray-400 flex items-center">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {anime.type} • Ep {anime.seasons[0]?.episodes[0]?.episodeNumber || 1}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+              
+              {(!schedule || !schedule[activeDay] || schedule[activeDay].length === 0) && (
+                <p className="text-sm text-gray-400">No anime scheduled</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Weekly schedule accordion */}
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="weekly">
+              <AccordionTrigger className="text-sm font-medium">
+                Weekly Schedule
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  {Object.entries(schedule || {}).map(([day, animes]) => (
+                    <div key={day} className="space-y-2">
+                      <h4 className="text-xs font-medium text-gray-400">
+                        {formatDay(day)}
+                      </h4>
+                      <div className="space-y-2">
+                        {animes.slice(0, 5).map((anime) => (
+                          <Link
+                            key={anime.id}
+                            to={`/anime/${anime.id}`}
+                            className="flex gap-2 p-2 rounded-md hover:bg-gray-800 transition-colors"
+                          >
+                            <img
+                              src={anime.coverImage}
+                              alt={anime.title}
+                              className="h-10 w-10 object-cover rounded-md"
+                            />
+                            <div>
+                              <h5 className="text-xs font-medium line-clamp-1">{anime.title}</h5>
+                              <p className="text-xs text-gray-400">
+                                {anime.type}
+                              </p>
+                            </div>
+                          </Link>
+                        ))}
+                        
+                        {animes.length > 5 && (
+                          <Link 
+                            to="/browse" 
+                            className="text-xs text-anime-primary hover:underline"
+                          >
+                            + {animes.length - 5} more
+                          </Link>
+                        )}
+                        
+                        {animes.length === 0 && (
+                          <p className="text-xs text-gray-400">No anime scheduled</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </ScrollArea>
     </div>
   );
 };

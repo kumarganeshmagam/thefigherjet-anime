@@ -1,68 +1,72 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import HeroSection from '@/components/anime/HeroSection';
 import AnimeCarousel from '@/components/anime/AnimeCarousel';
-import { getTopAnimes, getRecentAnimes, animeList } from '@/lib/dummyData';
-import { Anime } from '@/types/anime';
+import { useTopAnimes, useSeasonalAnimes, useSearchAnimes } from '@/lib/jikanApi';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const HomePage = () => {
-  const [featuredAnime, setFeaturedAnime] = useState<Anime | null>(null);
-  const [topAnimes, setTopAnimes] = useState<Anime[]>([]);
-  const [recentAnimes, setRecentAnimes] = useState<Anime[]>([]);
-  const [actionAnimes, setActionAnimes] = useState<Anime[]>([]);
-  const [romanceAnimes, setRomanceAnimes] = useState<Anime[]>([]);
+  const { data: topAnimes, isLoading: isLoadingTop } = useTopAnimes(10);
+  const { data: seasonalAnimes, isLoading: isLoadingSeasonal } = useSeasonalAnimes(10);
+  const { data: actionAnimes } = useSearchAnimes('action', 10);
+  const { data: romanceAnimes } = useSearchAnimes('romance', 10);
   
-  useEffect(() => {
-    // Get a random anime for the hero section
-    const randomAnime = animeList[Math.floor(Math.random() * animeList.length)];
-    setFeaturedAnime(randomAnime);
-    
-    // Top rated animes
-    setTopAnimes(getTopAnimes(10));
-    
-    // Recent animes
-    setRecentAnimes(getRecentAnimes(10));
-    
-    // Action animes (filter by genre)
-    const actionGenre = animeList.filter(anime => 
-      anime.genres.some(genre => genre.name.toLowerCase() === 'action')
-    );
-    setActionAnimes(actionGenre);
-    
-    // Romance animes (filter by genre)
-    const romanceGenre = animeList.filter(anime => 
-      anime.genres.some(genre => genre.name.toLowerCase() === 'romance')
-    );
-    setRomanceAnimes(romanceGenre);
-  }, []);
+  // Select a featured anime from seasonal or top animes
+  const featuredAnime = seasonalAnimes?.[0] || topAnimes?.[0];
   
-  if (!featuredAnime) return <div>Loading...</div>;
+  const isLoading = isLoadingTop || isLoadingSeasonal;
+  
+  if (isLoading || !featuredAnime) {
+    return (
+      <MainLayout>
+        <div className="w-full h-[70vh] bg-gray-900">
+          <Skeleton className="w-full h-full" />
+        </div>
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-8 w-48 mb-4" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
   
   return (
     <MainLayout>
       <HeroSection anime={featuredAnime} />
       
       <div className="container mx-auto px-4 py-8">
-        <AnimeCarousel 
-          animes={topAnimes}
-          title="Top Rated Anime"
-        />
+        {topAnimes && topAnimes.length > 0 && (
+          <AnimeCarousel 
+            animes={topAnimes}
+            title="Top Rated Anime"
+          />
+        )}
         
-        <AnimeCarousel 
-          animes={recentAnimes}
-          title="Recently Added"
-        />
+        {seasonalAnimes && seasonalAnimes.length > 0 && (
+          <AnimeCarousel 
+            animes={seasonalAnimes}
+            title="Currently Airing"
+          />
+        )}
         
-        <AnimeCarousel 
-          animes={actionAnimes}
-          title="Action Anime"
-        />
+        {actionAnimes && actionAnimes.length > 0 && (
+          <AnimeCarousel 
+            animes={actionAnimes}
+            title="Action Anime"
+          />
+        )}
         
-        <AnimeCarousel 
-          animes={romanceAnimes}
-          title="Romance Anime"
-        />
+        {romanceAnimes && romanceAnimes.length > 0 && (
+          <AnimeCarousel 
+            animes={romanceAnimes}
+            title="Romance Anime"
+          />
+        )}
       </div>
     </MainLayout>
   );
